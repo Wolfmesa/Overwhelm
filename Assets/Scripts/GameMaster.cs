@@ -5,26 +5,54 @@ using System.Collections;
 public class GameMaster : MonoBehaviour {
 
     public static GameMaster Instance;
+    public Transform PlayerTank;
     public bool Paused;
     public Transform CanvasRoot;
+    public Transform TankPosesRoot, GemPosesRoot;
+    public Transform[] TanksPrefs;
     public Text ScoreTxt;
-    public Image[] Hearts;
-    public Animation PauseLayer;
+    public Image[] Hearts, Shields;
+    public Animation PauseLayer, GameOverLayer;
+    public float MinTank, MaxTank;
 
-    public Sprite HeartFull, HeartEmpty;
-    public Transform HeartLostFX;
+    public Sprite HeartFull, HeartEmpty, ShieldFull, ShieldEmpty;
+    public Transform HeartLostFX, ShieldLostFX, ShieldGem, ShieldFX;
 
     private int Score;
-    private int Lives, BackupLives;
-    private float Delay;
+    private int Lives, BackupLives, Armors, BackupArmors;
+    private float Delay, ShieldDelay, deltaTank;
     private bool IsPausing;
+    [HideInInspector] public bool IsLoosing;
 
 	void Start () {
         Instance = this;
-        Lives = BackupLives = 3;
+        Lives = BackupLives = PlayerPrefs.GetInt("Loaded_Lives", 5);
+        Armors = BackupArmors = PlayerPrefs.GetInt("Loaded_Armors", 4);
+        ShieldDelay = Random.Range(15.0f, 30.0f);
+        deltaTank = Random.Range(2, 4);
+
+        for (int i = BackupLives; i < Hearts.Length; i++)
+            Hearts[i].enabled = false;
+        for (int i = BackupArmors; i < Shields.Length; i++)
+            Shields[i].enabled = false;
 	}
 	
 	void Update () {
+        ShieldDelay -= Time.deltaTime;
+        deltaTank -= Time.deltaTime;
+        if (ShieldDelay <= 0.0f) {
+            ShieldDelay = Random.Range(15.0f, 30.0f);
+            Vector3 pos = GemPosesRoot.GetChild(Random.Range(0, GemPosesRoot.childCount)).position;
+            Transform _sg = (Transform)Instantiate(ShieldGem, pos, Quaternion.identity);
+            _sg.Rotate(Vector3.right, 55.0f);
+        }
+        if (deltaTank <= 0.0f) {
+            deltaTank = Random.Range(MinTank, MaxTank);
+            Vector3 pos = TankPosesRoot.GetChild(Random.Range(0, TankPosesRoot.childCount)).position;
+            Transform _tk = (Transform)Instantiate(TanksPrefs[Random.Range(0, TanksPrefs.Length)], pos, Quaternion.identity);
+            _tk.GetComponent<EnemyTank>().Player = PlayerTank;
+        }
+
         if (IsPausing) {
             Delay -= Time.deltaTime;
             if (Delay <= 0.0f) { 
@@ -33,22 +61,59 @@ public class GameMaster : MonoBehaviour {
                 Time.timeScale = 0.0f; 
             }
         }
+        if (IsLoosing) {
+            Delay -= Time.deltaTime;
+            if (Delay <= 0.0f) {
+                Paused = true;
+                IsLoosing = false;
+                Time.timeScale = 0.0f;
+            }
+        }
 	}
 
-    public void PlayerHit() {
-        Lives--;
-        Transform _ht = (Transform)Instantiate(HeartLostFX, Hearts[Lives].rectTransform.position, Quaternion.identity);
-        _ht.SetParent(CanvasRoot, true);
-        for (int i = Lives; i < BackupLives; i++)
-            Hearts[i].sprite = HeartEmpty;
+    void Loose() {
+        Debug.Log("Lost!");
+        GameOverLayer.Play("Appear");
+        IsLoosing = true;
+        Delay = 0.5f;
 
-        if (Lives == 0)
-            Debug.Log("Lost!");
+        if (Score > PlayerPrefs.GetInt("Highscore", 0))
+            PlayerPrefs.SetInt("Highscore", Score);
+
+        GameObject[] bullets = GameObject.FindGameObjectsWithTag("Bullet");
+        foreach (GameObject _bull in bullets)
+            Destroy(_bull);
+    }
+
+    public void PlayerHit() {
+        if (Armors > 0) {
+            Armors--;
+            Shields[Armors].sprite = ShieldEmpty;
+
+            Transform _sd = (Transform)Instantiate(ShieldLostFX, Shields[Armors].rectTransform.position, Quaternion.identity);
+            _sd.SetParent(CanvasRoot, true);
+        }
+        else {
+            Lives--;
+            Transform _ht = (Transform)Instantiate(HeartLostFX, Hearts[Lives].rectTransform.position, Quaternion.identity);
+            _ht.SetParent(CanvasRoot, true);
+            for (int i = Lives; i < BackupLives; i++)
+                Hearts[i].sprite = HeartEmpty;
+
+            if (Lives == 0)
+                Loose();
+        }
     }
 
     public void ScorePoints(int Reward) {
         Score += Reward;
         ScoreTxt.text = Score.ToString("000");
+    }
+
+    public void GemPickedUp(Vector3 gemPos) {
+        Instantiate(ShieldFX, gemPos, Quaternion.identity);
+        Armors = Mathf.Clamp(Armors + 1, 0, BackupArmors);
+        Shields[Armors - 1].sprite = ShieldFull;
     }
 
     public void Pause() {
@@ -61,6 +126,26 @@ public class GameMaster : MonoBehaviour {
         Paused = false;
         Time.timeScale = 1.0f;
         PauseLayer.Play("Disappear");
+    }
+
+    public void Replay() {
+        GameOverLayer.Play("Disappear");
+        Paused = false;
+        Score = 0;
+        ScoreTxt.text = "000";
+        Time.timeScale = 1.0f;
+        deltaTank = Random.Range(2.0f, 4.0f);
+
+        Lives = BackupLives;
+        Armors = BackupArmors;
+        for (int i = 0; i < BackupLives; i++)
+            Hearts[i].enabled = false;
+        for (int i = 0; i < BackupArmors; i++)
+            Shields[i].enabled = false;
+
+        GameObject[] _enemies = GameObject.FindGameObjectsWithTag("EnemyTank");
+        foreach (GameObject _en in _enemies)
+            Destroy(_en);
     }
 
     public void Quit() {

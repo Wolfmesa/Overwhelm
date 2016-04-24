@@ -43,6 +43,9 @@ public class EnemyTank : MonoBehaviour {
     }
 
     void Update() {
+        if (GameMaster.Instance.IsLoosing || GameMaster.Instance.Paused)
+            return;
+
         if (Turning) {
             tunrLerp += Time.deltaTime * 2.5f;
             _myTrans.forward = Vector3.Lerp(prevDir, dir, tunrLerp);

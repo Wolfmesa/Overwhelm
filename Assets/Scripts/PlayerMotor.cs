@@ -1,23 +1,35 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class PlayerMotor : MonoBehaviour {
 
+    public enum CurrentWeapon { Regular, Spud };
+    public CurrentWeapon currentWeapon = CurrentWeapon.Regular;
+
     public Camera UICam, GameCam;
     public Transform PlayerTank, MuzzlePoint, Turret;
     public Transform JoystickRoot, Joystick;
+    public Text RegAmount, SpudAmount;
+    public Transform SelectMark, RegMark, SpudMark;
     public float PlayerSpeed;
 
-    public Transform BulletPref;
+    public Transform BulletPref, SpudPref;
 
     private Vector3 AdditionnalVector, dir, CurrentTouch;
     private bool OnJoystick, OnPause, CanFire;
     private int MoveStickID, PauseID;
     private Vector3[] StartPos = new Vector3[10];
     private float Distance, Angle, FireBudget;
+    private int RegQty, SpudQty;
 
 	void Start () {
         MoveStickID = -10;
+
+        RegQty = PlayerPrefs.GetInt("RegQty", 499);
+        SpudQty = PlayerPrefs.GetInt("SpudQty", 499);
+        RegAmount.text = RegQty.ToString("000");
+        SpudAmount.text = SpudQty.ToString("000");
 	}
 	
 	void Update () {
@@ -119,12 +131,45 @@ public class PlayerMotor : MonoBehaviour {
                 Vector3 hitPoint = hit.point;
                 hitPoint.y = MuzzlePoint.position.y;
                 Turret.LookAt(hitPoint);
+                Turret.Rotate(Vector3.up, 90.0f);
 
-                Transform _bullet = (Transform)Instantiate(BulletPref, MuzzlePoint.position, Quaternion.identity);
-                _bullet.LookAt(hitPoint);
+                switch (currentWeapon) {
+                    case CurrentWeapon.Regular:
+                        RegQty--;
+                        RegAmount.text = RegQty.ToString("000");
+                        Transform _bullet = (Transform)Instantiate(BulletPref, MuzzlePoint.position, Quaternion.identity);
+                        _bullet.LookAt(hitPoint);
+                        break;
+                    case CurrentWeapon.Spud:
+                        SpudQty--;
+                        SpudAmount.text = SpudQty.ToString("000");
+                        Transform _spud = (Transform)Instantiate(SpudPref, MuzzlePoint.position, Quaternion.identity);
+                        _spud.GetComponent<SpudHandler>().TargetPos = hit.point;
+
+                        if (SpudQty <= 0) {
+                            currentWeapon = CurrentWeapon.Regular;
+                            SelectMark.position = RegMark.position;
+                        }
+                        break;
+                }
 
                 FireBudget -= 0.6f;
             }
+        }
+    }
+
+    public void ChangeWeapon(string WeapID) {
+        switch (WeapID) { 
+            case "Regular":
+                SelectMark.position = RegMark.position;
+                currentWeapon = CurrentWeapon.Regular;
+                break;
+            case "Spud":
+                if (SpudQty > 0) {
+                    SelectMark.position = SpudMark.position;
+                    currentWeapon = CurrentWeapon.Spud;
+                }
+                break;
         }
     }
 }

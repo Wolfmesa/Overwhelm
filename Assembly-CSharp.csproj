@@ -45,13 +45,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\BouncingGem.cs" />
      <Compile Include="Assets\Scripts\BulletHandler.cs" />
      <Compile Include="Assets\Scripts\CamGizmos.cs" />
      <Compile Include="Assets\Scripts\EnemyTank.cs" />
      <Compile Include="Assets\Scripts\GameMaster.cs" />
      <Compile Include="Assets\Scripts\HPGone.cs" />
      <Compile Include="Assets\Scripts\PlayerMotor.cs" />
+     <Compile Include="Assets\Scripts\PlayerPhysX.cs" />
      <Compile Include="Assets\Scripts\ScoreFX.cs" />
+     <Compile Include="Assets\Scripts\SpudHandler.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
