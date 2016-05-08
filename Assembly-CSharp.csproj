@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\BouncingGem.cs" />
+     <Compile Include="Assets\Scripts\BoxHandler.cs" />
      <Compile Include="Assets\Scripts\BulletHandler.cs" />
      <Compile Include="Assets\Scripts\CamGizmos.cs" />
      <Compile Include="Assets\Scripts\EnemyTank.cs" />

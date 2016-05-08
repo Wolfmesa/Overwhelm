@@ -6,6 +6,7 @@ public class BulletHandler : MonoBehaviour {
     public bool IsFriend;
     public float Speed;
     public float TriggerDist;
+    public float Damage;
     public Transform ExplodeFX;
 
     private Transform _myTrans;
@@ -35,7 +36,7 @@ public class BulletHandler : MonoBehaviour {
                     break;
                 case "EnemyTank":
                     if (IsFriend) {
-                        hit.transform.GetComponent<EnemyTank>().Hit(60.0f);
+                        hit.transform.GetComponent<EnemyTank>().Hit(Damage);
 
                         Instantiate(ExplodeFX, _myTrans.position, Quaternion.identity);
                         Destroy(this.gameObject);

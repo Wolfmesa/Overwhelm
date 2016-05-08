@@ -8,19 +8,21 @@ public class GameMaster : MonoBehaviour {
     public Transform PlayerTank;
     public bool Paused;
     public Transform CanvasRoot;
-    public Transform TankPosesRoot, GemPosesRoot;
+    public Transform TankPosesRoot, GemPosesRoot, BonusPosesRoot;
     public Transform[] TanksPrefs;
+    public Transform[] BonusPrefs;
     public Text ScoreTxt;
     public Image[] Hearts, Shields;
     public Animation PauseLayer, GameOverLayer;
     public float MinTank, MaxTank;
+    public float MinBonus, MaxBonus;
 
     public Sprite HeartFull, HeartEmpty, ShieldFull, ShieldEmpty;
     public Transform HeartLostFX, ShieldLostFX, ShieldGem, ShieldFX;
 
     private int Score;
     private int Lives, BackupLives, Armors, BackupArmors;
-    private float Delay, ShieldDelay, deltaTank;
+    private float Delay, ShieldDelay, deltaTank, deltaBonus;
     private bool IsPausing;
     [HideInInspector] public bool IsLoosing;
 
@@ -30,6 +32,7 @@ public class GameMaster : MonoBehaviour {
         Armors = BackupArmors = PlayerPrefs.GetInt("Loaded_Armors", 4);
         ShieldDelay = Random.Range(15.0f, 30.0f);
         deltaTank = Random.Range(2, 4);
+        deltaBonus = Random.Range(MinBonus, MaxBonus);
 
         for (int i = BackupLives; i < Hearts.Length; i++)
             Hearts[i].enabled = false;
@@ -40,6 +43,7 @@ public class GameMaster : MonoBehaviour {
 	void Update () {
         ShieldDelay -= Time.deltaTime;
         deltaTank -= Time.deltaTime;
+        deltaBonus -= Time.deltaTime;
         if (ShieldDelay <= 0.0f) {
             ShieldDelay = Random.Range(15.0f, 30.0f);
             Vector3 pos = GemPosesRoot.GetChild(Random.Range(0, GemPosesRoot.childCount)).position;
@@ -51,6 +55,22 @@ public class GameMaster : MonoBehaviour {
             Vector3 pos = TankPosesRoot.GetChild(Random.Range(0, TankPosesRoot.childCount)).position;
             Transform _tk = (Transform)Instantiate(TanksPrefs[Random.Range(0, TanksPrefs.Length)], pos, Quaternion.identity);
             _tk.GetComponent<EnemyTank>().Player = PlayerTank;
+        }
+        if (deltaBonus <= 0.0f) {
+            deltaBonus = Random.Range(MinBonus, MaxBonus);
+            Vector3 pos = BonusPosesRoot.GetChild(Random.Range(0, BonusPosesRoot.childCount)).position;
+            Transform bonus = null;
+
+            int Choice = Random.Range(0, 100);
+            if (Choice % 2 == 0)
+                bonus = (Transform)Instantiate(BonusPrefs[0], pos, Quaternion.identity); //Créer une caisse d'obus perçant avec 50% de chance
+            else if(Choice % 5 == 0)
+                bonus = (Transform)Instantiate(BonusPrefs[1], pos, Quaternion.identity); //Créer une caisse d'obus grenade avec 20% de chance
+            else if(Choice % 29 == 0)
+                bonus = (Transform)Instantiate(BonusPrefs[2], pos, Quaternion.identity); //Créer une caisse d'obus nucléaire avec 3% de chance
+
+            bonus.Rotate(Vector3.right, -90.0f);
+            //Si aucune de ces conditions n'est respectée, aucun bonus n'appaîtra à l'écran
         }
 
         if (IsPausing) {
